@@ -19,7 +19,7 @@
  */
 /**
  * Cypher query execution.
- * 
+ *
  * @class
  * @param db Should be a GraphDatabase instance.
  */
@@ -30,22 +30,26 @@ neo4j.cypher.ExecutionEngine = function(db)
      * A GraphDatabase instance.
      */
     this.db = db;
-    
+
 };
 
 _.extend(neo4j.cypher.ExecutionEngine.prototype,
-        
-    /** @lends neo4j.cypher.ExecutionEngine# */          
+
+    /** @lends neo4j.cypher.ExecutionEngine# */
     {
 
-        execute : function(query) {
+        execute : function(query, params) {
             var self = this;
             return this.db.getServiceDefinition().then(function(urls, fulfill, fail) {
-                self.db.web.post(urls['cypher'], {query:query}, function(result) {
+                var data = {query:query};
+                if (params) {
+                    data.params = params;
+                }
+                self.db.web.post(urls['cypher'], data, function(result) {
                     fulfill(new neo4j.cypher.QueryResult(self.db, result));
                 }, fail);
             });
         }
-    
+
     }
 );
