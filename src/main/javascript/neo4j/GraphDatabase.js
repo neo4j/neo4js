@@ -19,14 +19,14 @@
  */
 /**
  * Connect to a neo4j REST server.
- * 
+ *
  * <br />
  * Example:
- * 
+ *
  * <pre>
  * var db = new neo4j.GraphDatabase(&quot;http://localhost:9999/&quot;);
  * </pre>
- * 
+ *
  * @class
  * @param url the url to the neo4j server
  * @returns a new GraphDatabase instance
@@ -47,7 +47,7 @@ neo4j.GraphDatabase = function(url, webClient)
 
     /**
      * Convinience access to event bind method.
-     * 
+     *
      * @see neo4j.Events#bind
      */
     this.bind = neo4j.proxy(this.events.bind, this.events);
@@ -60,7 +60,7 @@ neo4j.GraphDatabase = function(url, webClient)
 
     /**
      * Convinience access to event trigger method.
-     * 
+     *
      * @see neo4j.Events#trigger
      */
     this.trigger = neo4j.proxy(this.events.trigger, this.events);
@@ -74,7 +74,7 @@ neo4j.GraphDatabase = function(url, webClient)
      * Cypher ExecutionEngine, instance of {@link neo4j.cypher.ExecutionEngine}.
      */
     this.cypher = new neo4j.cypher.ExecutionEngine(this);
-    
+
     /**
      * Manager, instance of {@link neo4j.GraphDatabaseManager}.
      */
@@ -88,19 +88,19 @@ neo4j.GraphDatabase = function(url, webClient)
     // Rapid access
     this.rel = this.relationship;
     this.referenceNode = this.getReferenceNode;
-    
-    _.bindAll(this, 'getServiceDefinition', 'getReferenceNode', 'node', 
+
+    _.bindAll(this, 'getServiceDefinition', 'getReferenceNode', 'node',
               'relationship', 'getReferenceNodeUrl', 'getAvailableRelationshipTypes', 'get', 'put', 'post', 'del', 'forceRediscovery');
 
 };
 
-_.extend(neo4j.GraphDatabase.prototype, 
-    /** @lends neo4j.GraphDatabase# */    
+_.extend(neo4j.GraphDatabase.prototype,
+    /** @lends neo4j.GraphDatabase# */
     {
 
     /**
      * Used to manipulate nodes.
-     * 
+     *
      * @param arg
      *            Is either a node url or a map of attributes to create a new
      *            node. It can also be a promise of either one.
@@ -136,18 +136,18 @@ _.extend(neo4j.GraphDatabase.prototype,
 
     /**
      * Used to get a relationship by url, or to create a new relationship.
-     * 
+     *
      * @param arg1
-     *            Should be a relationship url (self), or a start node if you 
+     *            Should be a relationship url (self), or a start node if you
      *            are creating a new relationship, or a promise for either one.
-     * @param type 
-     *            The type of relationship to create, if you are creating a 
+     * @param type
+     *            The type of relationship to create, if you are creating a
      *            relationship. A promise for a type is also ok.
      * @param toNode
      *            End node if you are creating a relationship, or promise for one.
-     * @param data 
+     * @param data
      *            Map of properties if you are creating a relationship, or
-     *            a promise of one. Optional if you don't want to specify 
+     *            a promise of one. Optional if you don't want to specify
      *            any properties.
      */
     relationship : function(fromNode, type, toNode, data)
@@ -156,11 +156,11 @@ _.extend(neo4j.GraphDatabase.prototype,
         if( typeof(type) == "undefined" ) {
             // Fetch relationship
             var urlPromise = this.promiseRelationshipOrRelationshipUrl(fromNode);
-            
+
             return urlPromise.then(function(url, fulfill, fail){
                 var relationship = new neo4j.models.Relationship({self:url}, db);
                 relationship.fetch().then(function(fetchedRelationship) {
-                   fulfill(fetchedRelationship); 
+                   fulfill(fetchedRelationship);
                 }, function() {
                     fail(new neo4j.exceptions.NotFoundException(url));
                 });
@@ -171,7 +171,7 @@ _.extend(neo4j.GraphDatabase.prototype,
                 typePromise = neo4j.Promise.wrap(type),
                 fromNodePromise = this.promiseNodeOrNodeUrl(fromNode),
                 toNodePromise = this.promiseNodeOrNodeUrl(toNode);
-            
+
             var all = neo4j.Promise.join(fromNodePromise, toNodePromise, typePromise, dataPromise);
             return all.then(function(results, fulfill, fail)  {
                 var relationship = new neo4j.models.Relationship({
@@ -181,19 +181,19 @@ _.extend(neo4j.GraphDatabase.prototype,
                     data : results[3]
                 }, db);
                 relationship.save().then(function(savedRelationship) {
-                   fulfill(savedRelationship); 
+                   fulfill(savedRelationship);
                 }, fail);
             });
         }
     },
-    
+
     /**
      * Execute a cypher query against this database.
      * @param query A cypher query string.
      * @return A promise for a neo4j.cypher.QueryResult
      */
-    query : function(query) {
-        return this.cypher.execute(query);
+    query : function(query, params) {
+        return this.cypher.execute(query, params);
     },
 
     /**
@@ -216,7 +216,7 @@ _.extend(neo4j.GraphDatabase.prototype,
             }
         });
     },
-    
+
     /**
      * @return A promise for the reference node.
      */
@@ -224,10 +224,10 @@ _.extend(neo4j.GraphDatabase.prototype,
     {
         return this.node(this.getReferenceNodeUrl());
     },
-    
+
     /**
      * @return A promise for an array of strings, each string a relationship
-     * type in use in the database. 
+     * type in use in the database.
      */
     getAvailableRelationshipTypes : function() {
         var db = this;
@@ -251,12 +251,12 @@ _.extend(neo4j.GraphDatabase.prototype,
             }
         });
     },
-    
+
     nodeUri : function(id) {
         if(typeof(id.getSelf) != "undefined") {
             return neo4j.Promise.wrap(id.getSelf());
         }
-        
+
         return this.getServiceDefinition().then(function(def, fulfill) {
             if(/^[0-9]+$/i.test(id)) {
                 fulfill(def.node+"/"+id);
@@ -270,7 +270,7 @@ _.extend(neo4j.GraphDatabase.prototype,
         if(typeof(id.getSelf) != "undefined") {
             return neo4j.Promise.wrap(id.getSelf());
         }
-        
+
         return this.getDiscoveryDocument().then(function(urls, fulfill){
             if(/^[0-9]+$/i.test(id)) {
                 // There is currently no way to discover relationship url
@@ -280,7 +280,7 @@ _.extend(neo4j.GraphDatabase.prototype,
             }
         });
     },
-    
+
     /**
      * @return A promise for a map of services, as they are returned
      *         from a GET call to the server data root.
@@ -297,7 +297,7 @@ _.extend(neo4j.GraphDatabase.prototype,
 
         return this._serviceDefinitionPromise;
     },
-    
+
     getDiscoveryDocument : function() {
         if (typeof (this._discoveryDocumentPromise) === "undefined")
         {
@@ -330,7 +330,7 @@ _.extend(neo4j.GraphDatabase.prototype,
     /**
      * Perform a http DELETE call for a given resource.
      * @deprecated Use #web instead.
-     * 
+     *
      * @param resource
      *            is the resource to fetch (e.g. /myresource)
      * @param data
@@ -348,7 +348,7 @@ _.extend(neo4j.GraphDatabase.prototype,
     /**
      * Perform a http POST call for a given resource.
      * @deprecated Use #web instead.
-     * 
+     *
      * @param resource
      *            is the resource to fetch (e.g. /myresource)
      * @param data
@@ -366,7 +366,7 @@ _.extend(neo4j.GraphDatabase.prototype,
     /**
      * Perform a http PUT call for a given resource.
      * @deprecated Use #web instead.
-     * 
+     *
      * @param resource
      *            is the resource to fetch (e.g. /myresource)
      * @param data
@@ -385,9 +385,9 @@ _.extend(neo4j.GraphDatabase.prototype,
      * If the host in the url matches the REST base url, the rest base url will
      * be stripped off. If it matches the management base url, that will be
      * stripped off.
-     * 
+     *
      * If none of them match, the host will be stripped off.
-     * 
+     *
      * @param url
      *            {String}
      */
@@ -409,7 +409,7 @@ _.extend(neo4j.GraphDatabase.prototype,
             return url.substring(url.indexOf("/", 8));
         }
     },
-    
+
     /**
      * Determine if a given url is a node url.
      * @return A promise for a boolean response.
@@ -419,7 +419,7 @@ _.extend(neo4j.GraphDatabase.prototype,
             fulfill(url.indexOf(urls['node']) === 0);
         });
     },
-    
+
     promiseNodeOrNodeUrl : function(unknown) {
         if(typeof(unknown) === "object" || this.isUrl(unknown)) {
             return neo4j.Promise.wrap(unknown);
@@ -427,21 +427,21 @@ _.extend(neo4j.GraphDatabase.prototype,
             return this.nodeUri(unknown);
         }
     },
-    
+
     promiseRelationshipOrRelationshipUrl : function(unknown) {
         if(typeof(unknown) === "object" || this.isUrl(unknown)) {
             return neo4j.Promise.wrap(unknown);
         } else {
-            return this.relUri(unknown); 
+            return this.relUri(unknown);
         }
     },
-    
+
     /**
      * Naive check to see if input contains ://
      */
     isUrl : function(variableToCheck) {
         if(typeof(variableToCheck) === "object") return false;
-        
+
         variableToCheck += "";
         return variableToCheck.indexOf("://") !== -1;
     },
@@ -453,9 +453,9 @@ _.extend(neo4j.GraphDatabase.prototype,
     {
         return { url : this.url };
     },
-    
+
     /**
-     * A call to this method will force a rediscovery of the 
+     * A call to this method will force a rediscovery of the
      * server the next time something requests info about the
      * server discovery document.
      */
